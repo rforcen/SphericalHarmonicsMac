@@ -1,2 +1,2 @@
 # SphericalHarmonicsMac
-macos cocoa xcode Spherical Harmonics mutithreading
+macos cocoa xcode Spherical Harmonics mutithreading using simd
