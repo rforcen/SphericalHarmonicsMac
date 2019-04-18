@@ -15,38 +15,12 @@ Texture texture(float t, float u) {
     return _tx;
 }
 
-void normalise(XYZ *p) {
-    float length;
-    
-    length = p->x * p->x + p->y * p->y + p->z * p->z;
-    if (length > 0) {
-        length = sqrt(length);
-        p->x /= length;
-        p->y /= length;
-        p->z /= length;
-    }
-    else {
-        p->x = 0;
-        p->y = 0;
-        p->z = 0;
-    }
+inline void normalise(XYZ *p) {
+    *p = simd_normalize(*p);
 }
 
 XYZ calcNormals(XYZ p, XYZ p1, XYZ p2) {
-    XYZ n, pa, pb;
-    
-    pa.x = p1.x - p.x;
-    pa.y = p1.y - p.y;
-    pa.z = p1.z - p.z;
-    pb.x = p2.x - p.x;
-    pb.y = p2.y - p.y;
-    pb.z = p2.z - p.z;
-    n.x = pa.y * pb.z - pa.z * pb.y;
-    n.y = pa.z * pb.x - pa.x * pb.z;
-    n.z = pa.x * pb.y - pa.y * pb.x;
-    normalise(&n);
-    
-    return (n);
+    return simd_normalize(simd_cross(p1-p2, p1-p));
 }
 
 Color calcColor(float v, float vmin, float vmax, int type) {

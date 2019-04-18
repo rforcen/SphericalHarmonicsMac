@@ -38,7 +38,7 @@
     sh->mesh->textures  = sh->textures;
     
     sh->mesh->nc = nitems;
-    sh->multiThread=YES; // YES: doesn't improve
+    sh->multiThread=YES; 
     if(sh->multiThread)  {
         sh->queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
         sh->group = dispatch_group_create();
@@ -97,9 +97,10 @@ XYZ coord(float theta, float phi, float *m) {
     r += pow(sin(m[4] * theta), (float)m[5]);
     r += pow(cos(m[6] * theta), (float)m[7]);
     
-    XYZ p={ .x=r * sin(phi) * cos(theta),
-        .y = r * cos(phi),
-        .z = r * sin(phi) * sin(theta)};
+    XYZ p=simd_make_float3(
+         r * sin(phi) * cos(theta),
+         r * cos(phi),
+         r * sin(phi) * sin(theta));
     
     return p;
 }
