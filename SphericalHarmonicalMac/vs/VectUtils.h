@@ -18,6 +18,9 @@ typedef float Vect8f[8];
 typedef simd_float3 XYZ, Color;
 typedef simd_float2 Texture;
 
+//typedef struct { float x,y,z; } XYZ;
+//typedef struct { float r,g,b; } Color;
+
 typedef struct {
     int nc;
     XYZ *coords,  *normals;

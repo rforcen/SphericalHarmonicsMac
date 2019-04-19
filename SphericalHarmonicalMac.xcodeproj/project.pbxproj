@@ -21,6 +21,8 @@
 		4E2F3D0E21B3CD7100D4BD44 /* SCNUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 4E2F3D0521B3CD7100D4BD44 /* SCNUtils.m */; };
 		4E2F3D0F21B3CD7100D4BD44 /* SHCodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 4E2F3D0821B3CD7100D4BD44 /* SHCodes.c */; };
 		4E2F3D1021B3CD7100D4BD44 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = 4E2F3D0921B3CD7100D4BD44 /* Common.m */; };
+		4EEE355C2269C8880050EB29 /* SphericalHarmonics.metal in Sources */ = {isa = PBXBuildFile; fileRef = 4EEE355B2269C8880050EB29 /* SphericalHarmonics.metal */; };
+		4EEE355F2269D9060050EB29 /* MetalDevice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 4EEE355E2269D9060050EB29 /* MetalDevice.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +54,9 @@
 		4E2F3D0721B3CD7100D4BD44 /* PlatoPoly.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlatoPoly.h; sourceTree = "<group>"; };
 		4E2F3D0821B3CD7100D4BD44 /* SHCodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SHCodes.c; sourceTree = "<group>"; };
 		4E2F3D0921B3CD7100D4BD44 /* Common.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Common.m; sourceTree = "<group>"; };
+		4EEE355B2269C8880050EB29 /* SphericalHarmonics.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SphericalHarmonics.metal; sourceTree = "<group>"; };
+		4EEE355D2269D9060050EB29 /* MetalDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MetalDevice.h; sourceTree = "<group>"; };
+		4EEE355E2269D9060050EB29 /* MetalDevice.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MetalDevice.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +122,7 @@
 			children = (
 				4E2F3CFD21B3CD7100D4BD44 /* SphericalHarmonics.h */,
 				4E2F3D0421B3CD7100D4BD44 /* SphericalHarmonics.m */,
+				4EEE355B2269C8880050EB29 /* SphericalHarmonics.metal */,
 				4E2F3D0321B3CD7100D4BD44 /* Geo.h */,
 				4E2F3CFE21B3CD7100D4BD44 /* Geo.m */,
 				4E2F3CFF21B3CD7100D4BD44 /* SCNUtils.h */,
@@ -127,6 +133,8 @@
 				4E2F3D0121B3CD7100D4BD44 /* VectUtils.c */,
 				4E2F3D0221B3CD7100D4BD44 /* SHCodes.h */,
 				4E2F3D0821B3CD7100D4BD44 /* SHCodes.c */,
+				4EEE355D2269D9060050EB29 /* MetalDevice.h */,
+				4EEE355E2269D9060050EB29 /* MetalDevice.mm */,
 			);
 			path = vs;
 			sourceTree = "<group>";
@@ -203,7 +211,9 @@
 				4E2F3D1021B3CD7100D4BD44 /* Common.m in Sources */,
 				4E2F3D0B21B3CD7100D4BD44 /* PlatoPoly.m in Sources */,
 				4E2F3CE521B3C97200D4BD44 /* ViewController.m in Sources */,
+				4EEE355C2269C8880050EB29 /* SphericalHarmonics.metal in Sources */,
 				4E2F3CED21B3C97300D4BD44 /* main.m in Sources */,
+				4EEE355F2269D9060050EB29 /* MetalDevice.mm in Sources */,
 				4E2F3D0D21B3CD7100D4BD44 /* SphericalHarmonics.m in Sources */,
 				4E2F3CFA21B3CB9E00D4BD44 /* PresetCell.m in Sources */,
 				4E2F3D0A21B3CD7100D4BD44 /* Geo.m in Sources */,

@@ -7,8 +7,20 @@
 //
 
 #import "SphericalHarmonics.h"
+#import "MetalDevice.h"
 
-@implementation SphericalHarmonics
+typedef struct {
+    XYZ coords[4],  normals[4];
+    Texture textures[4];
+    Color colors[4];
+} Quad;
+
+
+@implementation SphericalHarmonics {
+    MetalDevice*metalDevice;
+    Quad *quads;
+    uint res2;
+}
 
 +(void) randomize { srand((unsigned)time(NULL)); }
 +(float) rnd :(float)range {  return (float)(range * rand())/RAND_MAX; }
@@ -23,6 +35,7 @@
     const int res=128;
     sh->colourmap = 7;
     sh->resolution = res;
+    sh->res2 = res*res;
     sh->im = 1;
     
     // alloc results in 2 x trigs per facet *6
@@ -38,7 +51,7 @@
     sh->mesh->textures  = sh->textures;
     
     sh->mesh->nc = nitems;
-    sh->multiThread=YES; 
+    sh->multiThread=YES;
     if(sh->multiThread)  {
         sh->queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
         sh->group = dispatch_group_create();
@@ -46,6 +59,9 @@
     
     //    [SphericalHarmonics randomize];
     //    [sh readCode: -1]; // random code
+    
+    sh->metalDevice=[MetalDevice init];
+    
     
     return sh;
 }
@@ -92,24 +108,61 @@
 XYZ coord(float theta, float phi, float *m) {
     float r = 0;
     
-    r += pow(sin(m[0] * phi), (float)m[1]);
-    r += pow(cos(m[2] * phi), (float)m[3]);
-    r += pow(sin(m[4] * theta), (float)m[5]);
-    r += pow(cos(m[6] * theta), (float)m[7]);
+    r += powf(sinf(m[0] * phi), m[1]);
+    r += powf(cosf(m[2] * phi), m[3]);
+    r += powf(sinf(m[4] * theta), m[5]);
+    r += powf(cosf(m[6] * theta), m[7]);
     
     XYZ p=simd_make_float3(
-         r * sin(phi) * cos(theta),
-         r * cos(phi),
-         r * sin(phi) * sin(theta));
+                           r * sinf(phi) * cosf(theta),
+                           r * cosf(phi),
+                           r * sinf(phi) * sinf(theta));
     
     return p;
 }
 
 -(Mesh*)genCoords {
     return (multiThread) ?
-    [self genCoordsMultiThread:(int)[[NSProcessInfo processInfo] processorCount]] :
+    [self genCoordsMetal] :
+//        [self genCoordsMultiThread:(int)[[NSProcessInfo processInfo] processorCount]] :
     [self genCoordsSingleThread];
 }
+
+
+-(Mesh*)genCoordsMetal {
+    
+    // init quads
+    quads = calloc(res2, sizeof(Quad));
+    
+    // metal init
+    [metalDevice compileFunc:@"sphericalHarmonics"];
+    
+    id<MTLBuffer>quadBuff=[metalDevice createBuffer:quads length:res2*sizeof(Quad)];
+    [metalDevice setBufferParam: quadBuff index:0]; // shader parameters: out:quadBuffer, in:(resolution, m, colourmap)
+    [metalDevice setBytesParam:&resolution         length:sizeof(resolution)      index:1];
+    [metalDevice setBytesParam:m                   length:sizeof(m)               index:2];
+    [metalDevice setBytesParam:&colourmap          length:sizeof(colourmap)       index:3];
+    
+    [metalDevice runThreadsWidth:resolution height:resolution];
+    [metalDevice copyContentsOn:quads buffer:quadBuff];
+    
+    // generate mesh
+    NSArray<NSNumber*>*trigs=[Geo triangularize:4];
+    for (int i=0, nc=0; i<res2; i++)
+        for (NSNumber*cs in trigs) { // quad -> trigs
+            int ics=[cs intValue];
+            coords[nc]   = quads[i].coords[ics];       colors[nc]   = quads[i].colors[ics];
+            normals[nc]  = quads[i].normals[ics];      textures[nc] = quads[i].textures[ics];
+            nc++;
+        }
+    // create mesh
+    [self createNode];
+    
+    free(quads);
+    
+    return mesh;
+}
+
 -(Mesh*)genCoordsSingleThread { // single thread
     float du, dv, u, v, dx;
     XYZ q[4], n[4]; // quads q:coords, c:colors, n:normal, t:textures
