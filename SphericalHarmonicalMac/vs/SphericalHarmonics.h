@@ -18,7 +18,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface SphericalHarmonics : NSObject {
-    Vect8f mfrom, mto, m, mtmp, mdelta; // 'm' mgr
+    Vect8f m; // 'm' mgr
     int steps;
     
     int resolution;

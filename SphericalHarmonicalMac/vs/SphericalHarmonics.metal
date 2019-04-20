@@ -15,6 +15,7 @@ typedef float3 XYZ; // matches simd_float3 & 2
 typedef float3 Color;
 typedef float2 Texture;
 
+// match struct in cpu
 typedef struct { // sizeof(float3) == sizeof(simd_float3) == 16, sizeof(float2)==sizeof(simd_float2)==8
     XYZ coords[4],  normals[4];
     Texture textures[4];
@@ -28,7 +29,7 @@ Color   calcColor(float v, float vmin, float vmax, int type);
 Texture texture(float t, float u);
 XYZ     calcCoord(float theta, float phi, const device float *m);
 void    generate(uint i, uint j, const uint resolution, const float device *m, const uint colourmap,
-              Quad device*quad);
+                 Quad device*quad);
 
 // generates a single quad(x+y*res) coord set
 kernel void sphericalHarmonics(device Quad*quads[[buffer(0)]], // out-> res x res size
@@ -39,69 +40,82 @@ kernel void sphericalHarmonics(device Quad*quads[[buffer(0)]], // out-> res x re
                                
                                uint2 position [[thread_position_in_grid]] ) // x,y
 {
-    uint index = position.x + position.y * resolution;
+    uint index = position.x + position.y * resolution; // quad index in res*res space
     generate(position.x, position.y, resolution, m, colourmap, quads + index);
 }
 
 void generate(uint i, uint j, const uint resolution, const float device *m, const uint colourmap,
               Quad device*quad) {
-
-    XYZ device *q=quad->coords, *n=quad->normals; // quads q:coords, c:colors, n:normal, t:textures
-    Color device *c=quad->colors;
-    Texture device *t=quad->textures;
+    
+    XYZ device *crd=quad->coords, *nrm=quad->normals; // quads crd:coords, col:colors, nrm:normal, t:textures
+    Color device *col=quad->colors;
+    Texture device *txr=quad->textures;
     
     float   du = TWOPI / resolution,    // Theta
-            dv = M_PI / resolution,     // Phi
-            dx = 1. / resolution;
+    dv = M_PI / resolution,     // Phi
+    dx = 1. / resolution;
     
-    float   u = du * i,  v = dv * j;
+    float  u = du * i,  v = dv * j, du10=du/10., dv10=dv/10;
+    float  idx=i*dx, jdx=j*dx, idx1=(i+1)*dx, jdx1=(j+1)*dx;
     
-    q[0] = calcCoord(u, v, m);
-    n[0] = calcNormals(q[0], calcCoord(u + du / 10, v, m), calcCoord(u, v + dv / 10, m));
-    c[0] = calcColor(u, 0.0, TWOPI, colourmap);
-    t[0] = texture(i*dx, j*dx);
+    crd[0] = calcCoord(u, v, m);
+    nrm[0] = calcNormals(crd[0], calcCoord(u + du10, v, m), calcCoord(u, v + dv10, m));
+    col[0] = calcColor(u, 0, TWOPI, colourmap);
+    txr[0] = texture(idx, jdx);
     
-    q[1] = calcCoord(u + du, v, m);
-    n[1] = calcNormals(q[1], calcCoord(u + du + du / 10, v, m),  calcCoord(u + du, v + dv / 10, m));
-    c[1] = calcColor(u + du, 0.0, TWOPI, colourmap);
-    t[1] = texture((i + 1)*dx, j*dx);
+    crd[1] = calcCoord(u + du, v, m);
+    nrm[1] = calcNormals(crd[1], calcCoord(u + du + du10, v, m),  calcCoord(u + du, v + dv10, m));
+    col[1] = calcColor(u + du, 0, TWOPI, colourmap);
+    txr[1] = texture(idx1, jdx);
     
-    q[2] = calcCoord(u + du, v + dv, m);
-    n[2] = calcNormals(q[2], calcCoord(u + du + du / 10, v + dv, m), calcCoord(u + du, v + dv + dv / 10, m));
-    c[2] = calcColor(u + du, 0.0, TWOPI, colourmap);
-    t[2] = texture((i + 1)*dx, (j + 1)*dx);
+    crd[2] = calcCoord(u + du, v + dv, m);
+    nrm[2] = calcNormals(crd[2], calcCoord(u + du + du10, v + dv, m), calcCoord(u + du, v + dv + dv10, m));
+    col[2] = calcColor(u + du, 0, TWOPI, colourmap);
+    txr[2] = texture(idx1, jdx1);
     
-    q[3] = calcCoord(u, v + dv, m);
-    n[3] = calcNormals(q[3], calcCoord(u + du / 10, v + dv, m), calcCoord(u, v + dv + dv / 10, m));
-    c[3] = calcColor(u, 0.0, TWOPI, colourmap);
-    t[3] = texture(i*dx, (j + 1)*dx);
+    crd[3] = calcCoord(u, v + dv, m);
+    nrm[3] = calcNormals(crd[3], calcCoord(u + du10, v + dv, m), calcCoord(u, v + dv + dv10, m));
+    col[3] = calcColor(u, 0, TWOPI, colourmap);
+    txr[3] = texture(idx, jdx1);
 }
 
-inline float _pow(float x, float y) { // filtered power
+inline float powint(float x, float y) { // x ^ int, y is m[] so int in 1..8 range
+    switch ((int)y) {
+        case 0: return 1;
+        case 1: return x;
+        case 2: return x*x;
+        case 3: return x*x*x;
+        case 4: return x*x*x*x;
+        case 5: return x*x*x*x*x;
+        case 6: return x*x*x*x*x*x;
+        case 7: return x*x*x*x*x*x*x;
+        case 8: return x*x*x*x*x*x*x*x;
+        default: for (int i=1; i<y; i++) x*=x;
+            return x;
+    }
+}
+
+inline float powfil(float x, float y) { // general filtered power
     if(y==0) return 1;
-    if(x==0) return 0;
     float p = pow(x,y);
-    if(isnan(p)) return 0;
-    return p;
+    return (isnan(p) || isinf(p)) ? 0 : p;
 }
 
 XYZ calcCoord(float theta, float phi, const device float *m) {
-    float r;
+    float r  = powint(sin(m[0] * phi),   m[1]);
+    r += powint(cos(m[2] * phi),   m[3]);
+    r += powint(sin(m[4] * theta), m[5]);
+    r += powint(cos(m[6] * theta), m[7]);
     
-    r  = _pow(sin(m[0] * phi),   m[1]);
-    r += _pow(cos(m[2] * phi),   m[3]);
-    r += _pow(sin(m[4] * theta), m[5]);
-    r += _pow(cos(m[6] * theta), m[7]);
-    
-    XYZ p={ r * sin(phi) * cos(theta),
-            r * cos(phi),
-            r * sin(phi) * sin(theta)};
-    
-    return p;
+    return (XYZ) {
+        r * sin(phi) * cos(theta),
+        r * cos(phi),
+        r * sin(phi) * sin(theta)
+    };
 }
 
 inline Texture  texture(float t, float u) {  return Texture{t,u}; }
-inline XYZ    calcNormals(XYZ p, XYZ p1, XYZ p2) {   return normalize(cross(p1-p2, p1-p)); }
+inline XYZ      calcNormals(XYZ p0, XYZ p1, XYZ p2) {   return normalize(cross(p1-p2, p1-p0)); }
 
 Color calcColor(float v, float vmin, float vmax, int type) {
     float dv, vmid;

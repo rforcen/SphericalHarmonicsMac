@@ -32,14 +32,14 @@ typedef struct {
     
     sortCodes();
     
-    const int res=128;
+    const int res=256;
     sh->colourmap = 7;
     sh->resolution = res;
     sh->res2 = res*res;
     sh->im = 1;
     
     // alloc results in 2 x trigs per facet *6
-    int nitems = res*res * 3*2;
+    int nitems = res*res * (3*2);
     sh->coords = calloc(nitems, sizeof(*sh->coords));
     sh->normals= calloc(nitems, sizeof(*sh->normals));
     sh->colors = calloc(nitems, sizeof(*sh->colors));
@@ -60,7 +60,9 @@ typedef struct {
     //    [SphericalHarmonics randomize];
     //    [sh readCode: -1]; // random code
     
+    // metal init
     sh->metalDevice=[MetalDevice init];
+    sh->quads = calloc(sh->res2, sizeof(Quad));
     
     
     return sh;
@@ -72,6 +74,8 @@ typedef struct {
     free(mesh->colors);
     free(mesh->textures);
     free(mesh);
+    
+    free(quads);
 }
 
 -(NSString*)getCode:(int)ix {
@@ -131,9 +135,6 @@ XYZ coord(float theta, float phi, float *m) {
 
 -(Mesh*)genCoordsMetal {
     
-    // init quads
-    quads = calloc(res2, sizeof(Quad));
-    
     // metal init
     [metalDevice compileFunc:@"sphericalHarmonics"];
     
@@ -143,7 +144,8 @@ XYZ coord(float theta, float phi, float *m) {
     [metalDevice setBytesParam:m                   length:sizeof(m)               index:2];
     [metalDevice setBytesParam:&colourmap          length:sizeof(colourmap)       index:3];
     
-    [metalDevice runThreadsWidth:resolution height:resolution];
+    [metalDevice runThreadsWidth:resolution height:resolution]; // run in a res x res gpu grid
+    
     [metalDevice copyContentsOn:quads buffer:quadBuff];
     
     // generate mesh
@@ -157,8 +159,6 @@ XYZ coord(float theta, float phi, float *m) {
         }
     // create mesh
     [self createNode];
-    
-    free(quads);
     
     return mesh;
 }
